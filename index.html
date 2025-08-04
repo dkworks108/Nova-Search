@@ -135,8 +135,8 @@
         <!-- 🔹 Section C: Interactive Animation + Search Starts -->
         <section id="interactive-section" class="scroll-section bg-black/20">
             <div class="text-center z-10 mb-auto mt-24 px-4">
-                <h2 class="text-3xl md:text-4xl font-bold mb-2">The Nova Core</h2>
-                <p class="text-gray-400">The core is active. Trigger a search to interact.</p>
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">The Nova Assistant</h2>
+                <p class="text-gray-400">The assistant is active. Trigger a search to interact.</p>
             </div>
             <!-- This canvas will hold the particle animation -->
             <canvas id="particle-canvas"></canvas>
@@ -170,17 +170,23 @@
     </div>
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-
-    <!-- Custom JS with Shaders -->
     <script type="module">
+        // Import necessary Three.js modules
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.2/build/three.module.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.2/examples/jsm/loaders/GLTFLoader.js';
+        import { gsap } from 'https://cdn.jsdelivr.net/npm/gsap@3.11.5/index.js';
+
         // 🔹 --- Shader Definitions --- 🔹
         const vertexShader = `
             uniform float uTime;
             uniform float uState; // 0: running, 1: sensing, 2: relaxing
             uniform float uRunProgress; // 0 to 1 for running animation
+            attribute float aIsHorn;
+            attribute float aIsEye;
             attribute vec3 aNormal;
+
+            varying float vIsHorn;
+            varying float vIsEye;
 
             // Perlin noise functions
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -228,6 +234,8 @@
             }
 
             void main() {
+                vIsHorn = aIsHorn;
+                vIsEye = aIsEye;
                 vec3 pos = position;
 
                 // Running state
@@ -253,17 +261,37 @@
                 vec4 projectedPosition = projectionMatrix * viewPosition;
 
                 gl_Position = projectedPosition;
-                gl_PointSize = 2.0 * (1.0 / -viewPosition.z);
+                gl_PointSize = (aIsHorn > 0.5 ? 2.5 : 1.5) * (1.0 / -viewPosition.z);
             }
         `;
 
         const fragmentShader = `
+            uniform float uTime;
+            uniform float uState;
+            varying float vIsHorn;
+            varying float vIsEye;
+
             void main() {
                 float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
                 float strength = 1.0 - (distanceToCenter * 2.0);
                 if (strength < 0.0) discard;
 
-                vec3 color = vec3(0.0, 1.0, 1.0); // Cyan
+                vec3 color = vec3(0.0, 0.8, 0.8); // Darker Cyan for body
+
+                if (vIsHorn > 0.5) {
+                    float hornGlow = 0.0;
+                    if(uState == 1.0) { // Sensing
+                        hornGlow = 0.5 + (sin(uTime * 10.0) * 0.5 + 0.5) * 2.0;
+                    }
+                     if(uState == 2.0) { // Relaxing
+                        hornGlow = 0.2 + (sin(uTime) * 0.5 + 0.5) * 0.2;
+                    }
+                    color = mix(color, vec3(1.0), hornGlow); // Mix with white for glow
+                }
+
+                if (vIsEye > 0.5 && uState == 1.0) {
+                    color = vec3(1.0, 0.1, 0.1); // Red glow for eyes in sensing state
+                }
                 
                 gl_FragColor = vec4(color, strength);
             }
@@ -296,9 +324,17 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // FIX: Removed the GLTFLoader and directly create the geometry.
-            // This prevents network errors from trying to load an external file.
-            createGeometry();
+            const loader = new GLTFLoader();
+            // This is a free CC-licensed model from Sketchfab, converted to GLB
+            loader.load(
+                'https://raw.githubusercontent.com/google/gemini-pro-demos/main/pixel-gallery/assets/rhino.glb',
+                onModelLoad,
+                undefined,
+                (error) => {
+                    console.error('Failed to load model, creating fallback geometry.', error);
+                    createFallbackGeometry();
+                }
+            );
 
             window.addEventListener('resize', onWindowResize);
             document.getElementById('search-trigger').addEventListener('click', onSearchTrigger);
@@ -306,17 +342,68 @@
             animate();
         }
 
-        function createGeometry() {
-            const geometry = new THREE.TorusKnotGeometry(1.5, 0.4, 300, 32);
-            // The 'aNormal' attribute is needed for the particle displacement effect in the shader.
-            geometry.setAttribute('aNormal', geometry.attributes.normal);
-            setupSceneWithGeometry(geometry);
+        function onModelLoad(gltf) {
+            let rhinoGeometry;
+            gltf.scene.traverse(child => {
+                if (child.isMesh) {
+                    rhinoGeometry = child.geometry;
+                }
+            });
+
+            if (!rhinoGeometry) {
+                console.error("No mesh found in the GLTF scene. Creating fallback.");
+                createFallbackGeometry();
+                return;
+            }
+
+            rhinoGeometry.computeVertexNormals();
+            
+            const positions = rhinoGeometry.attributes.position.array;
+            const normals = rhinoGeometry.attributes.normal.array;
+            const isHorn = new Float32Array(positions.length / 3);
+            const isEye = new Float32Array(positions.length / 3);
+
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const y = positions[i+1];
+                const z = positions[i+2];
+
+                // Approximate horn vertices based on position (requires model inspection)
+                if (y > 1.2 && z > 0.4) { 
+                    isHorn[i/3] = 1.0;
+                } else {
+                    isHorn[i/3] = 0.0;
+                }
+                
+                // Approximate eye vertices
+                if (y > 1.0 && y < 1.2 && z > 0.35 && Math.abs(x) > 0.2) {
+                    isEye[i/3] = 1.0;
+                } else {
+                    isEye[i/3] = 0.0;
+                }
+            }
+            rhinoGeometry.setAttribute('aIsHorn', new THREE.BufferAttribute(isHorn, 1));
+            rhinoGeometry.setAttribute('aIsEye', new THREE.BufferAttribute(isEye, 1));
+            rhinoGeometry.setAttribute('aNormal', new THREE.BufferAttribute(normals, 3));
+
+            setupSceneWithGeometry(rhinoGeometry);
+        }
+
+        function createFallbackGeometry() {
+            const fallbackGeometry = new THREE.TorusKnotGeometry(1.5, 0.4, 300, 32);
+            const isHorn = new Float32Array(fallbackGeometry.attributes.position.count).fill(0);
+            const isEye = new Float32Array(fallbackGeometry.attributes.position.count).fill(0);
+            fallbackGeometry.setAttribute('aIsHorn', new THREE.BufferAttribute(isHorn, 1));
+            fallbackGeometry.setAttribute('aIsEye', new THREE.BufferAttribute(isEye, 1));
+            fallbackGeometry.setAttribute('aNormal', fallbackGeometry.attributes.normal);
+            setupSceneWithGeometry(fallbackGeometry);
         }
 
         function setupSceneWithGeometry(geometry) {
             particles = new THREE.Points(geometry, shaderMaterial);
-            particles.position.set(15, 0, 0); // Start further off-screen
+            particles.position.set(15, -1, 0); // Start further off-screen
             particles.rotation.y = -Math.PI / 2;
+            particles.scale.set(1.2, 1.2, 1.2);
             scene.add(particles);
             startCinematicLoop();
         }
@@ -349,7 +436,7 @@
                 
                 // Threat Display
                 .add(() => { shaderMaterial.uniforms.uState.value = 1.0; })
-                .to(camera.position, { x: 0, y: 0.8, z: 4, duration: 1.5, ease: 'power2.inOut' }, ">")
+                .to(camera.position, { x: 0, y: 1.2, z: 2.0, duration: 1.5, ease: 'power2.inOut' }, ">")
                 .to({}, { duration: 2.5 }) // Hold for sensing
 
                 // Exit Run
@@ -365,7 +452,7 @@
                 .to(particles.rotation, { y: exitPath[1].rotY, duration: 2, ease: 'power1.inOut' }, "<")
 
                 // Reset for next loop
-                .add(() => { if(particles) particles.position.set(15, 0, 0); });
+                .add(() => { if(particles) particles.position.set(15, -1, 0); });
         }
         
         function onSearchTrigger() {
@@ -374,10 +461,10 @@
 
             shaderMaterial.uniforms.uState.value = 2.0; // Set state to relaxing
             
-            // Animate object to a calm, centered position
-            gsap.to(particles.position, { x: 0, y: 0, z: 0, duration: 2, ease: 'power3.out' });
-            gsap.to(particles.rotation, { x: 0, y: Math.PI / 4, z: 0, duration: 2, ease: 'power3.out' });
-            gsap.to(camera.position, { x: 0, y: 0, z: 5, duration: 2, ease: 'power3.out' });
+            // Animate rhino to a calm, centered position
+            gsap.to(particles.position, { x: 0, y: -1.2, z: 0, duration: 2, ease: 'power3.out' });
+            gsap.to(particles.rotation, { x: 0.2, y: Math.PI / 12, z: 0, duration: 2, ease: 'power3.out' }); // Head down slightly
+            gsap.to(camera.position, { x: 0, y: 1, z: 5, duration: 2, ease: 'power3.out' });
             gsap.to(camera.rotation, { x: 0, y: 0, z: 0, duration: 2, ease: 'power3.out' });
         }
 
