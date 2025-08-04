@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Search - Cinematic AI Assistant</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Using Tabler Icons via CSS.gg for simplicity -->
+    <link href="https://css.gg/css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --bg-color: #0D0D0D;
+            --text-color: #FFFFFF;
+            --accent-color: #00FFFF; /* Neon Cyan */
+            --accent-color-rgb: 0, 255, 255;
+            --gold-color: #FFD700;
+            --gold-color-rgb: 255, 215, 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Important for full-screen canvas */
+        }
+
+        /* 🔹 Scroll Snapping Container */
+        .scroll-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+        }
+
+        .scroll-section {
+            scroll-snap-align: start;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* 🔹 Header Styling */
+        #header {
+            background-color: rgba(13, 13, 13, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .icon-glow:hover {
+            color: var(--accent-color);
+            /* Tailwind's drop-shadow doesn't support color variables well, so we use filter */
+            filter: drop-shadow(0 0 6px var(--accent-color));
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+        }
+
+        .search-bar {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .search-bar:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.3);
+        }
+        
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 🔹 Section A: Header Start -->
+    <header id="header" class="sticky top-0 z-50 w-full">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="font-playfair text-2xl font-bold tracking-wider text-white">
+                Nova Search
+            </div>
+            <nav class="hidden md:flex items-center space-x-10">
+                <a href="#hero" class="flex items-center space-x-2 text-gray-300 transition-all duration-300 icon-glow">
+                    <i class="gg-info"></i>
+                    <span>About</span>
+                </a>
+                <a href="#interactive-section" class="flex items-center space-x-2 text-gray-300 transition-all duration-300 icon-glow">
+                    <i class="gg-terminal"></i>
+                    <span>Interface</span>
+                </a>
+                <a href="#footer" class="flex items-center space-x-2 text-gray-300 transition-all duration-300 icon-glow">
+                    <i class="gg-profile"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
+            <button class="md:hidden text-white">
+                <i class="gg-menu"></i>
+            </button>
+        </div>
+    </header>
+    <!-- 🔹 Section A: Header End -->
+
+    <div class="scroll-container" style="margin-top: -72px;"> <!-- Offset for sticky header height -->
+        <!-- 🔹 Section B: Hero Section Starts -->
+        <section id="hero" class="scroll-section text-center">
+            <div class="relative z-10 p-6">
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-playfair font-bold text-white hero-glow tracking-wider">
+                    Discover the Power of Precision
+                </h1>
+                <p class="mt-6 text-lg md:text-xl text-gray-300 max-w-2xl mx-auto tracking-widest">
+                    Search Redefined with AI Elegance
+                </p>
+            </div>
+        </section>
+        <!-- 🔹 Section B: Hero Section Ends -->
+
+        <!-- 🔹 Section C: Interactive Animation + Search Starts -->
+        <section id="interactive-section" class="scroll-section bg-black/20">
+            <div class="text-center z-10 mb-auto mt-24 px-4">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">The Nova Core</h2>
+                <p class="text-gray-400">The core is active. Trigger a search to interact.</p>
+            </div>
+            <!-- This canvas will hold the particle animation -->
+            <canvas id="particle-canvas"></canvas>
+            <div class="relative z-10 mt-auto mb-16 w-full max-w-2xl px-4">
+                <div class="relative search-bar rounded-full bg-black/50">
+                    <input type="text" placeholder="Ask anything..." class="w-full bg-transparent text-white placeholder-gray-500 py-4 px-6 rounded-full focus:outline-none">
+                    <button id="search-trigger" class="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--accent-color)] text-black rounded-full p-2.5 hover:opacity-80 transition-opacity">
+                        <i class="gg-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- 🔹 Section C: Interactive Animation + Search Ends -->
+
+        <!-- 🔹 Section D: Footer Starts -->
+        <footer id="footer" class="scroll-section bg-black">
+            <div class="container mx-auto px-6 text-center max-w-4xl">
+                <h3 class="text-4xl font-playfair font-bold text-white mb-6">Explore the Future with Nova</h3>
+                <p class="text-gray-400 mb-12 leading-relaxed">
+                    Nova Search is more than a tool; it's a paradigm shift. Our mission is to harness the power of advanced artificial intelligence to provide unparalleled precision and insight, transforming complex data into clear, actionable knowledge. We are crafting the future of information discovery.
+                </p>
+                <div class="flex justify-center space-x-8 mb-12">
+                     <a href="#" class="text-gray-400 social-icon transition-all duration-300 icon-glow"><i class="gg-twitter" style="--ggs:1.5"></i></a>
+                    <a href="#" class="text-gray-400 social-icon transition-all duration-300 icon-glow"><i class="gg-youtube" style="--ggs:1.5"></i></a>
+                    <a href="#" class="text-gray-400 social-icon transition-all duration-300 icon-glow"><i class="gg-voicemail" style="--ggs:1.5"></i></a>
+                </div>
+                <p class="text-gray-600 text-sm">&copy; 2025 Nova Search. Crafted for the future.</p>
+            </div>
+        </footer>
+        <!-- 🔹 Section D: Footer Ends -->
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+
+    <!-- Custom JS with Shaders -->
+    <script type="module">
+        // 🔹 --- Shader Definitions --- 🔹
+        const vertexShader = `
+            uniform float uTime;
+            uniform float uState; // 0: running, 1: sensing, 2: relaxing
+            uniform float uRunProgress; // 0 to 1 for running animation
+            attribute vec3 aNormal;
+
+            // Perlin noise functions
+            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+            vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+            float snoise(vec3 v) {
+                const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+                const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                vec3 i  = floor(v + dot(v, C.yyy));
+                vec3 x0 = v - i + dot(i, C.xxx);
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min(g.xyz, l.zxy);
+                vec3 i2 = max(g.xyz, l.zxy);
+                vec3 x1 = x0 - i1 + C.xxx;
+                vec3 x2 = x0 - i2 + C.yyy;
+                vec3 x3 = x0 - D.yyy;
+                i = mod289(i);
+                vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+                float n_ = 0.142857142857;
+                vec3 ns = n_ * D.wyz - D.xzx;
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_);
+                vec4 x = x_ * ns.x + ns.yyyy;
+                vec4 y = y_ * ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+                vec4 b0 = vec4(x.xy, y.xy);
+                vec4 b1 = vec4(x.zw, y.zw);
+                vec4 s0 = floor(b0)*2.0 + 1.0;
+                vec4 s1 = floor(b1)*2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+                vec3 p0 = vec3(a0.xy,h.x);
+                vec3 p1 = vec3(a0.zw,h.y);
+                vec3 p2 = vec3(a1.xy,h.z);
+                vec3 p3 = vec3(a1.zw,h.w);
+                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+                p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                m = m * m;
+                return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+            }
+
+            void main() {
+                vec3 pos = position;
+
+                // Running state
+                float trailFactor = smoothstep(0.0, 0.5, uRunProgress) - smoothstep(0.5, 1.0, uRunProgress);
+                float disintegration = snoise(pos * 3.0 + uTime * 2.0) * 0.2 * trailFactor;
+                pos.x -= disintegration;
+
+                // Sensing state
+                float pulse = snoise(pos + uTime) * 0.1 * (1.0 - uState);
+                if (uState == 1.0) { // sensing
+                    pulse = snoise(pos * 2.0 + uTime * 3.0) * 0.05;
+                }
+                pos += aNormal * pulse;
+
+                // Relaxing state
+                if (uState == 2.0) {
+                    float gentlePulse = sin(pos.y * 5.0 + uTime) * 0.02;
+                    pos += aNormal * gentlePulse;
+                }
+
+                vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
+                vec4 viewPosition = viewMatrix * modelPosition;
+                vec4 projectedPosition = projectionMatrix * viewPosition;
+
+                gl_Position = projectedPosition;
+                gl_PointSize = 2.0 * (1.0 / -viewPosition.z);
+            }
+        `;
+
+        const fragmentShader = `
+            void main() {
+                float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
+                float strength = 1.0 - (distanceToCenter * 2.0);
+                if (strength < 0.0) discard;
+
+                vec3 color = vec3(0.0, 1.0, 1.0); // Cyan
+                
+                gl_FragColor = vec4(color, strength);
+            }
+        `;
+
+        // 🔹 --- Scene Setup --- 🔹
+        let scene, camera, renderer, particles, animationLoop;
+        const canvas = document.getElementById('particle-canvas');
+        const clock = new THREE.Clock();
+        
+        const shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0.0 },
+                uState: { value: 0.0 }, // 0: running
+                uRunProgress: { value: 0.0 },
+            },
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1, 8);
+
+            renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // FIX: Removed the GLTFLoader and directly create the geometry.
+            // This prevents network errors from trying to load an external file.
+            createGeometry();
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('search-trigger').addEventListener('click', onSearchTrigger);
+            
+            animate();
+        }
+
+        function createGeometry() {
+            const geometry = new THREE.TorusKnotGeometry(1.5, 0.4, 300, 32);
+            // The 'aNormal' attribute is needed for the particle displacement effect in the shader.
+            geometry.setAttribute('aNormal', geometry.attributes.normal);
+            setupSceneWithGeometry(geometry);
+        }
+
+        function setupSceneWithGeometry(geometry) {
+            particles = new THREE.Points(geometry, shaderMaterial);
+            particles.position.set(15, 0, 0); // Start further off-screen
+            particles.rotation.y = -Math.PI / 2;
+            scene.add(particles);
+            startCinematicLoop();
+        }
+
+        function startCinematicLoop() {
+            if (animationLoop) animationLoop.kill();
+            animationLoop = gsap.timeline({ repeat: -1 });
+
+            const runPath = [
+                { x: 5, z: 2, rotY: -Math.PI / 3 },
+                { x: 0, z: 0, rotY: 0 },
+            ];
+
+            const exitPath = [
+                { x: -5, z: -2, rotY: Math.PI / 3 },
+                { x: -15, z: 0, rotY: Math.PI / 2 },
+            ];
+
+            animationLoop
+                // Entry Run
+                .add(() => { shaderMaterial.uniforms.uState.value = 0.0; })
+                .to(particles.position, { 
+                    x: runPath[0].x, z: runPath[0].z, duration: 2, ease: 'power1.inOut'
+                })
+                .to(particles.rotation, { y: runPath[0].rotY, duration: 2, ease: 'power1.inOut' }, "<")
+                .to(particles.position, { 
+                    x: runPath[1].x, z: runPath[1].z, duration: 2, ease: 'power1.inOut'
+                })
+                .to(particles.rotation, { y: runPath[1].rotY, duration: 2, ease: 'power1.inOut' }, "<")
+                
+                // Threat Display
+                .add(() => { shaderMaterial.uniforms.uState.value = 1.0; })
+                .to(camera.position, { x: 0, y: 0.8, z: 4, duration: 1.5, ease: 'power2.inOut' }, ">")
+                .to({}, { duration: 2.5 }) // Hold for sensing
+
+                // Exit Run
+                .add(() => { shaderMaterial.uniforms.uState.value = 0.0; })
+                .to(camera.position, { x: 0, y: 1, z: 8, duration: 2, ease: 'power2.inOut' })
+                .to(particles.position, {
+                    x: exitPath[0].x, z: exitPath[0].z, duration: 2, ease: 'power1.inOut'
+                }, "<")
+                .to(particles.rotation, { y: exitPath[0].rotY, duration: 2, ease: 'power1.inOut' }, "<")
+                .to(particles.position, {
+                    x: exitPath[1].x, z: exitPath[1].z, duration: 2, ease: 'power1.inOut'
+                })
+                .to(particles.rotation, { y: exitPath[1].rotY, duration: 2, ease: 'power1.inOut' }, "<")
+
+                // Reset for next loop
+                .add(() => { if(particles) particles.position.set(15, 0, 0); });
+        }
+        
+        function onSearchTrigger() {
+            if (animationLoop) animationLoop.kill();
+            animationLoop = null;
+
+            shaderMaterial.uniforms.uState.value = 2.0; // Set state to relaxing
+            
+            // Animate object to a calm, centered position
+            gsap.to(particles.position, { x: 0, y: 0, z: 0, duration: 2, ease: 'power3.out' });
+            gsap.to(particles.rotation, { x: 0, y: Math.PI / 4, z: 0, duration: 2, ease: 'power3.out' });
+            gsap.to(camera.position, { x: 0, y: 0, z: 5, duration: 2, ease: 'power3.out' });
+            gsap.to(camera.rotation, { x: 0, y: 0, z: 0, duration: 2, ease: 'power3.out' });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            shaderMaterial.uniforms.uTime.value = elapsedTime;
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+</html>
