@@ -31,13 +31,13 @@ This project is UI-first and designed to act as a foundation for an AI-powered s
 
 ---
 
-## Project Structure
+## Project Structure 
 
 nova-search/
 │
 ├── index.html # Main UI, shaders, and animation logic
 ├── README.md # Project documentation
-└── assets/ # Optional future assets (models, sounds, images)
+└── assets/ # Optional future assets (models, sounds, images, Videos)
 
 
 
