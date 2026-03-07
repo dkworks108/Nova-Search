@@ -55,7 +55,7 @@ Note: This project uses procedurally generated geometry instead of external 3D m
 python3 -m http.server 5500
 
 
-Then open:
+Then open at:
 
 http://localhost:5500
 
