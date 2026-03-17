@@ -122,6 +122,9 @@ Running through a local server avoids browser restrictions on advanced WebGL fea
 - Advanced mobile gesture support  
 
 ---
+## New Updates 
+new updates are comming soon 
+
 
 ## License
 
