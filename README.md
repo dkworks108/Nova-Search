@@ -124,7 +124,7 @@ Running through a local server avoids browser restrictions on advanced WebGL fea
 ---
 ## New Updates 
 new updates are comming soon 
-
+stay connected 
 
 ## License
 
