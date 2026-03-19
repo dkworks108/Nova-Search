@@ -1,4 +1,4 @@
-# Nova Search – Cinematic AI Assistant UI Work
+# Nova Search – Cinematic AI Assistant UI Works
 
 Nova Search is a cinematic, futuristic AI search interface built with modern web technologies.  
 It combines scroll-snapped storytelling, GPU-powered particle animations, and a minimal AI search experience to create a premium, immersive user interface.
