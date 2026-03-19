@@ -41,7 +41,7 @@ nova-search/
 
 
 
-Note: This project uses procedurally generated geometry instead of external 3D models to avoid network or loading issues.
+Note:- This project uses procedurally generated geometry instead of external 3D models to avoid network or loading issues.
 
 ---
 
