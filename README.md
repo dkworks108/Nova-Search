@@ -106,7 +106,7 @@ Running through a local server avoids browser restrictions on advanced WebGL fea
 
 ## Browser Requirements
 
-- WebGL 2.0 support  
+- WebGL 2.0 supported 
 - Hardware acceleration enabled  
 - Latest versions of Chrome, Firefox, or Edge recommended  
 
